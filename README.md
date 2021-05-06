@@ -20,8 +20,7 @@ Command used to start QEMU
 
 ### Run
 
-For the exploit:
-Compile
+Compile the exploit
 ```
 make
 ```
