@@ -56,6 +56,27 @@ The function **nvme_map_prp()** here means mapping a block of memory. And there 
 3. Run the timer, Control RIP!
 
 
+### Tips
 
+Note that executing the system function directly will cause QEMU to fork a new process, resulting in the removal of the mapping space of guest memory. Therefore, we can consider copying the commands of guest space to QEMU main process, and controlling rip to slirp_smb_cleanup function. Then the command is copied to the RDI register, followed by a command injection to complete the command execution.
 
+```c
+static void slirp_smb_cleanup(SlirpState *s)
+{
+    int ret;
 
+    if (s->smb_dir) {
+        gchar *cmd = g_strdup_printf("rm -rf %s", s->smb_dir);        // Control RIP to here.
+        ret = system(cmd);
+        if (ret == -1 || !WIFEXITED(ret)) {
+            error_report("'%s' failed.", cmd);
+        } else if (WEXITSTATUS(ret)) {
+            error_report("'%s' failed. Error code: %d",
+                         cmd, WEXITSTATUS(ret));
+        }
+        g_free(cmd);
+        g_free(s->smb_dir);
+        s->smb_dir = NULL;
+    }
+}
+```
